@@ -1,9 +1,15 @@
 import { Link, useLocation } from "wouter";
-import { TestTube2, Search, List, Moon, Sun } from "lucide-react";
+import { TestTube2, Search, List, Moon, Sun, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 
-export default function Navigation() {
+interface NavigationProps {
+  employeeId?: string;
+  onLogout?: () => void;
+}
+
+export default function Navigation({ employeeId, onLogout }: NavigationProps) {
   const [location] = useLocation();
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -69,6 +75,25 @@ export default function Navigation() {
                 <Sun className="w-4 h-4" />
               )}
             </Button>
+
+            {employeeId && (
+              <>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md">
+                  <User className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-sm font-medium">{employeeId}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onLogout}
+                  className="gap-2"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
