@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { List, Filter, User, Calendar, FileText, Clock, TestTube2 } from "lucide-react";
+import { List, Filter, User, Calendar, FileText, Clock, TestTube2, Download, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface TestRecord {
   id: string;
@@ -19,11 +21,12 @@ interface TestRecord {
 
 interface RecordsViewProps {
   records?: TestRecord[];
+  onDeleteRecord?: (recordId: string) => void;
 }
 
 const testTypes = ["All Tests", "CBC", "Blood Glucose", "Lipid Profile", "Urinalysis"];
 
-export default function RecordsView({ records = [] }: RecordsViewProps) {
+export default function RecordsView({ records = [], onDeleteRecord }: RecordsViewProps) {
   const [filterType, setFilterType] = useState("All Tests");
 
   const filteredRecords = filterType === "All Tests"
@@ -46,8 +49,9 @@ export default function RecordsView({ records = [] }: RecordsViewProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <Card>
+    <div className="max-w-7xl mx-auto space-y-6 relative">
+      <img src="/assets/healthy-2.svg" alt="sticker" className="pointer-events-none absolute -right-6 -top-6 w-28 opacity-80 animate-float-slower" />
+      <Card className="card-entrance theme-transition">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle className="text-2xl flex items-center gap-2">
@@ -69,6 +73,44 @@ export default function RecordsView({ records = [] }: RecordsViewProps) {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Export the currently filtered records as CSV
+                  const rows = filteredRecords.map(r => ({
+                    id: r.id,
+                    patientId: r.patientId,
+                    patientName: r.patientName,
+                    age: r.age,
+                    gender: r.gender,
+                    testType: r.testType,
+                    purpose: r.purpose,
+                    sampleReceivedTime: r.sampleReceivedTime,
+                    sampleTestedTime: r.sampleTestedTime,
+                    testData: r.testData,
+                  }));
+                  if (rows.length === 0) return;
+                  const header = Object.keys(rows[0]);
+                  const csv = [header.join(",")]
+                    .concat(rows.map(r => header.map(h => `"${String((r as any)[h] ?? "").replace(/"/g, '""')}"`).join(",")))
+                    .join("\n");
+
+                  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `lab-records-${new Date().toISOString().slice(0,10)}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  URL.revokeObjectURL(url);
+                }}
+                aria-label="Export CSV"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export CSV</span>
+              </Button>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -78,7 +120,7 @@ export default function RecordsView({ records = [] }: RecordsViewProps) {
       </Card>
 
       {filteredRecords.length === 0 ? (
-        <Card>
+        <Card className="card-entrance theme-transition">
           <CardContent className="py-16 text-center">
             <TestTube2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No records found</h3>
@@ -93,8 +135,42 @@ export default function RecordsView({ records = [] }: RecordsViewProps) {
       ) : (
         <div className="space-y-4">
           {filteredRecords.map((record) => (
-            <Card key={record.id} className="hover-elevate" data-testid={`card-test-${record.patientId}`}>
+            <Card key={record.id} className="hover-elevate card-entrance theme-transition" data-testid={`card-test-${record.patientId}`}>
               <CardContent className="p-6">
+                {onDeleteRecord && (
+                  <div className="flex justify-end mb-4">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          aria-label={`Delete record for ${record.patientName}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Patient Record</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete the record for <strong>{record.patientName}</strong> (ID: {record.patientId})?
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => onDeleteRecord(record.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete Record
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
                 <div className="grid md:grid-cols-4 gap-6">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">

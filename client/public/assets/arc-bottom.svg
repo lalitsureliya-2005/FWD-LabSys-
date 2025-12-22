@@ -1,0 +1,9 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'>
+  <defs>
+    <linearGradient id='arcG2' x1='0' x2='1'>
+      <stop offset='0' stop-color='#dff6ff'/>
+      <stop offset='1' stop-color='#cfeefb'/>
+    </linearGradient>
+  </defs>
+  <path fill='url(#arcG2)' d='M0,256 C240,320 360,224 720,224 C1080,224 1200,320 1440,256 L1440,320 L0,320 Z'></path>
+</svg>

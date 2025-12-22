@@ -1,95 +1,104 @@
+import { useState } from "react";
 import RecordsView from "@/components/RecordsView";
-
-const mockRecords = [
-  {
-    id: "1",
-    patientId: "PT123456",
-    patientName: "John Doe",
-    age: 45,
-    gender: "Male",
-    testType: "CBC",
-    purpose: "Routine health checkup and blood count analysis",
-    sampleReceivedTime: new Date().toISOString(),
-    sampleTestedTime: new Date(Date.now() + 3600000).toISOString(),
-    testData: JSON.stringify({ 
-      "Hemoglobin": "14.5 g/dL", 
-      "RBC Count": "5.2 M/μL",
-      "WBC Count": "7500/μL",
-      "Platelet Count": "250,000/μL"
-    })
-  },
-  {
-    id: "2",
-    patientId: "PT789012",
-    patientName: "Jane Smith",
-    age: 32,
-    gender: "Female",
-    testType: "Blood Glucose",
-    purpose: "Diabetes screening and glucose level monitoring",
-    sampleReceivedTime: new Date(Date.now() - 86400000).toISOString(),
-    sampleTestedTime: new Date(Date.now() - 82800000).toISOString(),
-    testData: JSON.stringify({ 
-      "Fasting": "95 mg/dL", 
-      "Post Prandial": "140 mg/dL" 
-    })
-  },
-  {
-    id: "3",
-    patientId: "PT345678",
-    patientName: "Robert Johnson",
-    age: 58,
-    gender: "Male",
-    testType: "Lipid Profile",
-    purpose: "Cardiovascular risk assessment and cholesterol monitoring",
-    sampleReceivedTime: new Date(Date.now() - 172800000).toISOString(),
-    sampleTestedTime: new Date(Date.now() - 169200000).toISOString(),
-    testData: JSON.stringify({
-      "Total Cholesterol": "195 mg/dL",
-      "LDL": "120 mg/dL",
-      "HDL": "55 mg/dL",
-      "Triglycerides": "110 mg/dL"
-    })
-  },
-  {
-    id: "4",
-    patientId: "PT901234",
-    patientName: "Emily Davis",
-    age: 28,
-    gender: "Female",
-    testType: "Urinalysis",
-    purpose: "Urinary tract infection screening",
-    sampleReceivedTime: new Date(Date.now() - 259200000).toISOString(),
-    sampleTestedTime: new Date(Date.now() - 255600000).toISOString(),
-    testData: JSON.stringify({
-      "Color": "Pale Yellow",
-      "pH": "6.0",
-      "Protein": "Negative",
-      "Glucose": "Negative"
-    })
-  },
-  {
-    id: "5",
-    patientId: "PT567890",
-    patientName: "Michael Brown",
-    age: 52,
-    gender: "Male",
-    testType: "CBC",
-    purpose: "Pre-operative assessment and blood work evaluation",
-    sampleReceivedTime: new Date(Date.now() - 345600000).toISOString(),
-    sampleTestedTime: new Date(Date.now() - 342000000).toISOString(),
-    testData: JSON.stringify({
-      "Hemoglobin": "15.2 g/dL",
-      "RBC Count": "5.5 M/μL",
-      "WBC Count": "8200/μL",
-      "Platelet Count": "280,000/μL"
-    })
-  }
-];
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { List, BarChart3, FileText, Calendar } from "lucide-react";
+import { mockRecords, calculateStats } from "@/data/mockData";
 
 export default function RecordsPage() {
+  const [records, setRecords] = useState(mockRecords);
+
+  const handleDeleteRecord = (recordId: string) => {
+    setRecords(prevRecords => prevRecords.filter(record => record.id !== recordId));
+  };
+
+  const statsData = calculateStats(records);
+
+  const stats = [
+    { icon: List, label: "Total Records", value: statsData.totalRecords.toString(), color: "text-violet-600" },
+    { icon: BarChart3, label: "Test Types", value: statsData.testTypes.toString(), color: "text-pink-600" },
+    { icon: FileText, label: "Reports Generated", value: "156", color: "text-teal-600" },
+    { icon: Calendar, label: "This Week", value: statsData.thisWeekRecords.toString(), color: "text-amber-600" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 py-8 px-4">
-      <RecordsView records={mockRecords} />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/20 dark:to-purple-900/20 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-float-slow"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-indigo-400/20 to-pink-400/20 rounded-full blur-3xl animate-float-slower"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-cyan-400/10 to-violet-400/10 rounded-full blur-3xl animate-pulse"></div>
+      </div>
+
+      {/* Decorative medical icons */}
+      <div className="absolute inset-0 pointer-events-none">
+        <img src="/assets/healthy-1.svg" alt="medical icon" className="absolute top-20 left-20 w-16 h-16 opacity-60 animate-float-slow" />
+        <img src="/assets/healthy-2.svg" alt="medical icon" className="absolute bottom-20 right-20 w-12 h-12 opacity-50 animate-float-slower" />
+        <img src="/assets/healthy-1.svg" alt="medical icon" className="absolute top-1/3 right-32 w-10 h-10 opacity-40 animate-bounce-gentle" />
+        <img src="/assets/healthy-2.svg" alt="medical icon" className="absolute bottom-1/3 left-32 w-14 h-14 opacity-45 animate-float-slow" />
+      </div>
+
+      <div className="relative w-full max-w-7xl z-10">
+        <div className="max-w-7xl mx-auto px-4 relative">
+
+        {/* Hero Section */}
+        <div className="text-center mb-12 animate-fade-in-up">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-violet-600 to-pink-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <List className="w-4 h-4" />
+            Records Management
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-4">
+            Test Records Overview
+          </h1>
+          <p className="text-lg text-muted-foreground dark:text-gray-300 max-w-2xl mx-auto">
+            Comprehensive view of all patient test records with advanced filtering and export capabilities.
+            Monitor lab activities, track test results, and manage medical data efficiently.
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.label} className="hover-elevate card-entrance theme-transition" style={{ animationDelay: `${index * 100}ms` }}>
+                <CardContent className="p-6 text-center">
+                  <Icon className={`w-8 h-8 mx-auto mb-2 ${stat.color}`} />
+                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                  <div className="text-sm text-muted-foreground">{stat.label}</div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Records View Section */}
+        <div className="max-w-7xl mx-auto">
+          <Card className="glass-effect border-0 shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 card-entrance theme-transition">
+            <CardContent className="p-8">
+              <div className="text-center mb-8">
+                <Badge variant="secondary" className="mb-4">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Medical Database
+                </Badge>
+                <h2 className="text-2xl font-semibold text-foreground mb-2">
+                  Patient Test Records
+                </h2>
+                <p className="text-muted-foreground">
+                  Browse, filter, and export comprehensive medical test data
+                </p>
+              </div>
+              <RecordsView records={records} onDeleteRecord={handleDeleteRecord} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Additional decorative elements */}
+        <div className="absolute top-1/3 left-8 w-2 h-2 bg-violet-400 rounded-full opacity-60 animate-bounce-gentle" style={{ animationDelay: '0.5s' }}></div>
+        <div className="absolute bottom-1/4 right-16 w-1 h-1 bg-pink-400 rounded-full opacity-40 animate-bounce-gentle" style={{ animationDelay: '1.5s' }}></div>
+        <div className="absolute top-3/4 left-1/3 w-1.5 h-1.5 bg-teal-400 rounded-full opacity-50 animate-bounce-gentle" style={{ animationDelay: '2.5s' }}></div>
+        </div>
+      </div>
     </div>
   );
 }
