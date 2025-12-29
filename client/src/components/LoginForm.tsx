@@ -6,17 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { TestTube2, LogIn, BadgeCheck } from "lucide-react";
+import { TestTube2, LogIn, User } from "lucide-react";
+import { Link } from "wouter";
 
 const loginSchema = z.object({
-  employeeId: z.string().min(3, "Employee ID must be at least 3 characters"),
+  username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(4, "Password must be at least 4 characters"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 interface LoginFormProps {
-  onLogin: (employeeId: string) => void;
+  onLogin: () => void;
 }
 
 export default function LoginForm({ onLogin }: LoginFormProps) {
@@ -25,20 +26,37 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      employeeId: "",
+      username: "",
       password: "",
     },
   });
 
-  const handleSubmit = (data: LoginFormData) => {
+  const handleSubmit = async (data: LoginFormData) => {
     setError("");
-    
-    // For prototype: simple validation (any employee ID with password "1234" works)
-    if (data.password === "1234") {
-      console.log("Login successful:", data.employeeId);
-      onLogin(data.employeeId);
-    } else {
-      setError("Invalid credentials. Use password: 1234");
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem("token", data.token);
+        onLogin();
+      } else {
+        let errorMsg = "Invalid credentials";
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+        } catch { }
+        setError(errorMsg);
+      }
+    } catch (error) {
+      setError("Could not connect to the server.");
     }
   };
 
@@ -108,22 +126,22 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
               <CardContent className="pt-6">
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                   <div className="space-y-3">
-                    <Label htmlFor="employeeId" className="flex items-center gap-2 text-sm font-medium">
-                      <BadgeCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      Employee ID
+                    <Label htmlFor="username" className="flex items-center gap-2 text-sm font-medium">
+                      <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      Username
                     </Label>
                     <Input
-                      id="employeeId"
-                      placeholder="Enter your employee ID"
+                      id="username"
+                      placeholder="Enter your username"
                       autoComplete="username"
-                      data-testid="input-employee-id"
+                      data-testid="input-username"
                       className="h-12 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:ring-blue-500"
-                      {...form.register("employeeId")}
+                      {...form.register("username")}
                     />
-                    {form.formState.errors.employeeId && (
+                    {form.formState.errors.username && (
                       <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
                         <span className="w-1 h-1 bg-red-500 rounded-full"></span>
-                        {form.formState.errors.employeeId.message}
+                        {form.formState.errors.username.message}
                       </p>
                     )}
                   </div>
@@ -165,14 +183,12 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
                     Sign In to Dashboard
                   </Button>
 
-                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                      <p className="text-xs text-center text-blue-700 dark:text-blue-300">
-                        <span className="font-medium">Demo Mode:</span> Use any Employee ID with password
-                        <code className="font-mono bg-blue-100 dark:bg-blue-800 px-2 py-1 rounded ml-1 text-blue-800 dark:text-blue-200">1234</code>
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-center text-sm text-muted-foreground mt-4">
+                    Don't have an account?{" "}
+                    <Link href="/register" className="text-primary hover:underline">
+                      Register here
+                    </Link>
+                  </p>
                 </form>
               </CardContent>
             </Card>

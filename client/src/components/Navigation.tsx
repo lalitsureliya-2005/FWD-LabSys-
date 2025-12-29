@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 
 interface NavigationProps {
-  employeeId?: string;
+  username?: string;
   onLogout?: () => void;
 }
 
-export default function Navigation({ employeeId, onLogout }: NavigationProps) {
+export default function Navigation({ username, onLogout }: NavigationProps) {
   const [location] = useLocation();
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -62,16 +62,16 @@ export default function Navigation({ employeeId, onLogout }: NavigationProps) {
                 </Link>
               );
             })}
-            
+
             <Button variant="ghost" size="icon" onClick={toggleTheme} data-testid="button-theme-toggle" aria-label="Toggle theme">
               {theme === "light" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </Button>
 
-            {employeeId && (
+            {username && (
               <>
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md">
                   <User className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-sm font-medium">{employeeId}</span>
+                  <span className="text-sm font-medium">{username}</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -81,7 +81,7 @@ export default function Navigation({ employeeId, onLogout }: NavigationProps) {
                   data-testid="button-logout"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">Logout</span>
+                  <span>Logout</span>
                 </Button>
               </>
             )}

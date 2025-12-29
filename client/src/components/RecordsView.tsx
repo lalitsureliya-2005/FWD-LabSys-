@@ -10,6 +10,7 @@ interface TestRecord {
   id: string;
   patientId: string;
   patientName: string;
+  email?: string;
   age: number;
   gender: string;
   testType: string;
@@ -17,6 +18,7 @@ interface TestRecord {
   sampleReceivedTime: string;
   sampleTestedTime: string;
   testData: string;
+  doctorName?: string;
 }
 
 interface RecordsViewProps {
@@ -58,7 +60,7 @@ export default function RecordsView({ records = [], onDeleteRecord }: RecordsVie
               <List className="w-6 h-6 text-primary" />
               Test Records
             </CardTitle>
-            
+
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-muted-foreground" />
               <Select value={filterType} onValueChange={setFilterType}>
@@ -91,16 +93,16 @@ export default function RecordsView({ records = [], onDeleteRecord }: RecordsVie
                     testData: r.testData,
                   }));
                   if (rows.length === 0) return;
-                  const header = Object.keys(rows[0]);
+                  const header = Object.keys(rows[0]) as (keyof typeof rows[0])[];
                   const csv = [header.join(",")]
-                    .concat(rows.map(r => header.map(h => `"${String((r as any)[h] ?? "").replace(/"/g, '""')}"`).join(",")))
+                    .concat(rows.map(r => header.map(h => `"${String(r[h] ?? "").replace(/"/g, '""')}"`).join(",")))
                     .join("\n");
 
                   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");
                   a.href = url;
-                  a.download = `lab-records-${new Date().toISOString().slice(0,10)}.csv`;
+                  a.download = `lab-records-${new Date().toISOString().slice(0, 10)}.csv`;
                   document.body.appendChild(a);
                   a.click();
                   a.remove();
@@ -125,7 +127,7 @@ export default function RecordsView({ records = [], onDeleteRecord }: RecordsVie
             <TestTube2 className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No records found</h3>
             <p className="text-muted-foreground">
-              {filterType === "All Tests" 
+              {filterType === "All Tests"
                 ? "No test records available yet. Create a new entry to get started."
                 : `No ${filterType} records found. Try a different filter.`
               }
@@ -177,7 +179,17 @@ export default function RecordsView({ records = [], onDeleteRecord }: RecordsVie
                       <User className="w-4 h-4" />
                       <span className="font-medium">Patient Info</span>
                     </div>
-                    <h3 className="font-semibold text-lg">{record.patientName}</h3>
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-semibold text-lg">{record.patientName}</h3>
+                      {record.doctorName && (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-background text-muted-foreground">
+                          By: {record.doctorName}
+                        </Badge>
+                      )}
+                    </div>
+                    {record.email && (
+                      <p className="text-xs text-blue-600 break-all">{record.email}</p>
+                    )}
                     <p className="font-mono text-sm text-muted-foreground">{record.patientId}</p>
                     <div className="flex gap-3 text-sm">
                       <span className="text-muted-foreground">{record.age}y</span>
@@ -194,7 +206,7 @@ export default function RecordsView({ records = [], onDeleteRecord }: RecordsVie
                     <div className="flex items-center gap-2 mb-2">
                       <Badge>{record.testType}</Badge>
                     </div>
-                    
+
                     <div className="space-y-1">
                       <p className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                         <FileText className="w-3 h-3" />
@@ -203,15 +215,31 @@ export default function RecordsView({ records = [], onDeleteRecord }: RecordsVie
                       <p className="text-sm text-foreground">{record.purpose}</p>
                     </div>
 
-                    {record.testData && record.testData !== '{}' && (
+                    {record.testData && (
                       <div className="pt-2">
                         <p className="text-xs text-muted-foreground mb-1">Parameters</p>
                         <div className="flex flex-wrap gap-2">
-                          {Object.entries(JSON.parse(record.testData)).slice(0, 3).map(([key, value]) => (
-                            <div key={key} className="bg-muted px-2 py-1 rounded text-xs">
-                              <span className="font-medium">{key}:</span> {value as string}
-                            </div>
-                          ))}
+                          {(() => {
+                            try {
+                              // Try to parse as JSON object
+                              const parsed = JSON.parse(record.testData);
+                              if (typeof parsed === 'object' && parsed !== null) {
+                                return Object.entries(parsed).slice(0, 3).map(([key, value]) => (
+                                  <div key={key} className="bg-muted px-2 py-1 rounded text-xs">
+                                    <span className="font-medium">{key}:</span> {value as string}
+                                  </div>
+                                ));
+                              }
+                              throw new Error("Not an object");
+                            } catch {
+                              // Fallback: Display as simple text tag
+                              return (
+                                <div className="bg-muted px-2 py-1 rounded text-xs">
+                                  {record.testData}
+                                </div>
+                              );
+                            }
+                          })()}
                         </div>
                       </div>
                     )}

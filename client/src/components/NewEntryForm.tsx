@@ -20,6 +20,7 @@ const testTypes = {
 
 const formSchema = z.object({
   patientName: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Enter a valid email address"),
   age: z.number().min(1).max(120),
   gender: z.enum(["Male", "Female", "Other"]),
   testType: z.string().min(1, "Please select a test type"),
@@ -40,6 +41,7 @@ export default function NewEntryForm({ onSubmit }: NewEntryFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       patientName: "",
+      email: "",
       age: 30,
       gender: "Male",
       testType: "",
@@ -89,6 +91,22 @@ export default function NewEntryForm({ onSubmit }: NewEntryFormProps) {
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <User className="w-4 h-4 text-muted-foreground" />
+                Email Address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter patient email"
+                data-testid="input-patient-email"
+                {...form.register("email")}
+              />
+              {form.formState.errors.email && (
+                <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="patientName" className="flex items-center gap-2">
                 <User className="w-4 h-4 text-muted-foreground" />
                 Patient Name
@@ -124,7 +142,7 @@ export default function NewEntryForm({ onSubmit }: NewEntryFormProps) {
                 <Label>Gender</Label>
                 <RadioGroup
                   defaultValue="Male"
-                  onValueChange={(value) => form.setValue("gender", value as any)}
+                  onValueChange={(value) => form.setValue("gender", value as "Male" | "Female" | "Other")}
                   className="flex gap-4"
                   data-testid="radio-gender"
                 >

@@ -1,12 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SearchInterface from "@/components/SearchInterface";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Database, Search, Users, Clock } from "lucide-react";
-import { mockRecords, calculateStats } from "@/data/mockData";
+
 
 export default function SearchPage() {
-  const statsData = calculateStats();
+  interface TestRecord {
+    id: string;
+    patientId: string;
+    patientName: string;
+    age: number;
+    gender: string;
+    testType: string;
+    purpose: string;
+    sampleReceivedTime: string;
+    sampleTestedTime: string;
+    testData: string;
+  }
+
+  const [records, setRecords] = useState<TestRecord[]>([]);
+  const statsData = { totalRecords: records.length };
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    fetch("/api/results", {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch test results");
+        return res.json();
+      })
+      .then((data) => {
+        const mapped = data.map((result: any) => ({
+          id: result.shortId || result._id,
+          patientId: result.shortId || result._id || '',
+          patientName: result.patient?.name || '',
+          age: result.patient?.age || '',
+          gender: result.patient?.gender || '',
+          testType: result.test?.name || '',
+          purpose: result.test?.purpose || '',
+          sampleReceivedTime: result.createdAt || '',
+          sampleTestedTime: result.updatedAt || '',
+          testData: result.value || '',
+        }));
+        setRecords(mapped);
+      })
+      .catch((err) => {
+        console.error("Search fetch error:", err);
+      });
+  }, []);
 
   const stats = [
     { icon: Database, label: "Total Records", value: statsData.totalRecords.toString(), color: "text-indigo-600" },
@@ -35,62 +78,63 @@ export default function SearchPage() {
       <div className="relative w-full max-w-7xl z-10">
         <div className="max-w-7xl mx-auto px-4 relative">
 
-        {/* Hero Section */}
-        <div className="text-center mb-12 animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <Search className="w-4 h-4" />
-            Advanced Search
+          {/* Hero Section */}
+          <div className="text-center mb-12 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Search className="w-4 h-4" />
+              Advanced Search
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-4">
+              Find Patient Records
+            </h1>
+            <p className="text-lg text-muted-foreground dark:text-gray-300 max-w-2xl mx-auto">
+              Powerful search capabilities to quickly locate patient records, test results, and medical data.
+              Filter by patient details, test types, dates, and more for efficient healthcare management.
+            </p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-4">
-            Find Patient Records
-          </h1>
-          <p className="text-lg text-muted-foreground dark:text-gray-300 max-w-2xl mx-auto">
-            Powerful search capabilities to quickly locate patient records, test results, and medical data.
-            Filter by patient details, test types, dates, and more for efficient healthcare management.
-          </p>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.label} className="hover-elevate card-entrance theme-transition" style={{ animationDelay: `${index * 100}ms` }}>
-                <CardContent className="p-6 text-center">
-                  <Icon className={`w-8 h-8 mx-auto mb-2 ${stat.color}`} />
-                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <Card key={stat.label} className="hover-elevate card-entrance theme-transition" style={{ animationDelay: `${index * 100}ms` }}>
+                  <CardContent className="p-6 text-center">
+                    <Icon className={`w-8 h-8 mx-auto mb-2 ${stat.color}`} />
+                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
 
-        {/* Search Interface Section */}
-        <div className="max-w-7xl mx-auto">
-          <Card className="glass-effect border-0 shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 card-entrance theme-transition">
-            <CardContent className="p-8">
-              <div className="text-center mb-8">
-                <Badge variant="secondary" className="mb-4">
-                  <Search className="w-4 h-4 mr-2" />
-                  Smart Search Engine
-                </Badge>
-                <h2 className="text-2xl font-semibold text-foreground mb-2">
-                  Search & Filter Records
-                </h2>
-                <p className="text-muted-foreground">
-                  Use advanced filters to find exactly what you're looking for
-                </p>
-              </div>
-              <SearchInterface records={mockRecords} />
-            </CardContent>
-          </Card>
-        </div>
+          {/* Search Interface Section */}
+          <div className="max-w-7xl mx-auto">
+            <Card className="glass-effect border-0 shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 card-entrance theme-transition">
+              <CardContent className="p-8">
+                <div className="text-center mb-8">
+                  <Badge variant="secondary" className="mb-4">
+                    <Search className="w-4 h-4 mr-2" />
+                    Smart Search Engine
+                  </Badge>
+                  <h2 className="text-2xl font-semibold text-foreground mb-2">
+                    Search & Filter Records
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Use advanced filters to find exactly what you're looking for
+                  </p>
+                </div>
+                {/* TODO: Fetch records from backend API and pass here */}
+                <SearchInterface records={records} />
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Additional decorative elements */}
-        <div className="absolute top-1/2 left-8 w-2 h-2 bg-cyan-400 rounded-full opacity-60 animate-bounce-gentle" style={{ animationDelay: '0s' }}></div>
-        <div className="absolute top-1/3 right-12 w-1 h-1 bg-indigo-400 rounded-full opacity-40 animate-bounce-gentle" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-1/4 left-1/4 w-1.5 h-1.5 bg-emerald-400 rounded-full opacity-50 animate-bounce-gentle" style={{ animationDelay: '2s' }}></div>
+          {/* Additional decorative elements */}
+          <div className="absolute top-1/2 left-8 w-2 h-2 bg-cyan-400 rounded-full opacity-60 animate-bounce-gentle" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute top-1/3 right-12 w-1 h-1 bg-indigo-400 rounded-full opacity-40 animate-bounce-gentle" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-1/4 left-1/4 w-1.5 h-1.5 bg-emerald-400 rounded-full opacity-50 animate-bounce-gentle" style={{ animationDelay: '2s' }}></div>
         </div>
       </div>
     </div>

@@ -1,19 +1,39 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { createServer } from "http";
+import connectDB from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
+import patientRoutes from './routes/patientRoutes.js';
+import testRoutes from './routes/testRoutes.js';
+import resultRoutes from './routes/resultRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
+
 
 const app = express();
+app.use(express.json());
+
+
+// Connect to MongoDB, then import User model and log
+connectDB().then(() => {
+  import('./models/User.js').then(({ default: User }) => {
+    console.log('DEBUG: User model in index.ts after DB connect:', User);
+  });
+});
+
+app.use('/api/auth', authRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/tests', testRoutes);
+app.use('/api/results', resultRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 declare module 'http' {
   interface IncomingMessage {
     rawBody: unknown
   }
 }
-app.use(express.json({
-  verify: (req, _res, buf) => {
-    req.rawBody = buf;
-  }
-}));
+// app.use(express.json({ ... })); // Already added at top
+
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
@@ -22,9 +42,9 @@ app.use((req, res, next) => {
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
 
   const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
+  res.json = function (body?: any) {
+    capturedJsonResponse = body;
+    return originalResJson.call(this, body);
   };
 
   res.on("finish", () => {
@@ -47,14 +67,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  // const server = await registerRoutes(app);
+  const server = createServer(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after

@@ -1,22 +1,88 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NewEntryForm from "@/components/NewEntryForm";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TestTube2, Users, Activity, TrendingUp } from "lucide-react";
-import { calculateStats } from "@/data/mockData";
+
 
 export default function HomePage() {
   const { toast } = useToast();
-  const statsData = calculateStats();
+  const [statsData, setStatsData] = useState({ totalPatients: 0, testsToday: 0, activeCases: 0 });
 
-  const handleSubmit = (data: any) => {
-    console.log("New patient entry:", data);
+  useEffect(() => {
+    fetch('/api/dashboard/stats')
+      .then(res => res.json())
+      .then(data => setStatsData(data))
+      .catch(err => console.error('Failed to fetch stats:', err));
+  }, []);
 
-    toast({
-      title: "Record Saved Successfully",
-      description: `Patient ${data.patientName} (${data.patientId}) has been added to the system.`,
-    });
+  const handleSubmit = async (data: any) => {
+    try {
+      // Get token once
+      const token = localStorage.getItem("token");
+      // 1. Create patient
+      const patientRes = await fetch("/api/patients", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          name: data.patientName,
+          email: data.email,
+          age: data.age,
+          gender: data.gender,
+          phone: "0000000000" // fake phone
+        }),
+      });
+      if (!patientRes.ok) {
+        const errorData = await patientRes.json();
+        console.error("Patient Creation Failed:", errorData);
+        alert(`Debug Error: Failed to create patient. Status: ${patientRes.status}. Message: ${JSON.stringify(errorData)}`);
+        throw new Error(errorData.message || "Failed to create patient");
+      }
+      const patient = await patientRes.json();
+
+      // 2. Get test by name
+      const testRes = await fetch("/api/tests");
+      if (!testRes.ok) throw new Error("Failed to fetch tests");
+      const tests = await testRes.json();
+      const test = tests.find((t: any) => t.name === data.testType);
+      if (!test) throw new Error("Test type not found");
+
+      // 3. Create test result
+      const resultRes = await fetch("/api/results", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          patient: patient._id,
+          test: test._id,
+          value: data.testData,
+          status: "Completed"
+        }),
+      });
+      if (!resultRes.ok) {
+        const errorText = await resultRes.text();
+        console.error("Result Creation Failed:", errorText);
+        alert(`Debug Error: Failed to save result. Status: ${resultRes.status}. Text: ${errorText}`);
+        throw new Error("Failed to save test result");
+      }
+      toast({
+        title: "Record Saved Successfully",
+        description: `Patient ${data.patientName} (${patient._id}) has been added to the system.`,
+      });
+    } catch (err) {
+      console.error("Submit Error:", err);
+      toast({
+        title: "Error",
+        description: (err as Error).message || "Failed to save record.",
+        variant: "destructive",
+      });
+    }
   };
 
   const stats = [
@@ -46,62 +112,62 @@ export default function HomePage() {
       <div className="relative w-full max-w-7xl z-10">
         <div className="max-w-7xl mx-auto px-4 relative">
 
-        {/* Hero Section */}
-        <div className="text-center mb-12 animate-fade-in-up">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <TestTube2 className="w-4 h-4" />
-            Lab Management System
+          {/* Hero Section */}
+          <div className="text-center mb-12 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <TestTube2 className="w-4 h-4" />
+              Lab Management System
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-4">
+              New Patient Entry
+            </h1>
+            <p className="text-lg text-muted-foreground dark:text-gray-300 max-w-2xl mx-auto">
+              Efficiently manage patient records and lab test data with our comprehensive system.
+              Add new entries, track results, and maintain accurate medical records.
+            </p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent mb-4">
-            New Patient Entry
-          </h1>
-          <p className="text-lg text-muted-foreground dark:text-gray-300 max-w-2xl mx-auto">
-            Efficiently manage patient records and lab test data with our comprehensive system.
-            Add new entries, track results, and maintain accurate medical records.
-          </p>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.label} className="hover-elevate card-entrance theme-transition" style={{ animationDelay: `${index * 100}ms` }}>
-                <CardContent className="p-6 text-center">
-                  <Icon className={`w-8 h-8 mx-auto mb-2 ${stat.color}`} />
-                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                  <div className="text-sm text-muted-foreground">{stat.label}</div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <Card key={stat.label} className="hover-elevate card-entrance theme-transition" style={{ animationDelay: `${index * 100}ms` }}>
+                  <CardContent className="p-6 text-center">
+                    <Icon className={`w-8 h-8 mx-auto mb-2 ${stat.color}`} />
+                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
 
-        {/* Main Form Section */}
-        <div className="max-w-4xl mx-auto">
-          <Card className="glass-effect border-0 shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 card-entrance theme-transition">
-            <CardContent className="p-8">
-              <div className="text-center mb-8">
-                <Badge variant="secondary" className="mb-4">
-                  <TestTube2 className="w-4 h-4 mr-2" />
-                  Patient Information
-                </Badge>
-                <h2 className="text-2xl font-semibold text-foreground mb-2">
-                  Create New Patient Record
-                </h2>
-                <p className="text-muted-foreground">
-                  Fill in the patient details and test information below
-                </p>
-              </div>
-              <NewEntryForm onSubmit={handleSubmit} />
-            </CardContent>
-          </Card>
-        </div>
+          {/* Main Form Section */}
+          <div className="max-w-4xl mx-auto">
+            <Card className="glass-effect border-0 shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 card-entrance theme-transition">
+              <CardContent className="p-8">
+                <div className="text-center mb-8">
+                  <Badge variant="secondary" className="mb-4">
+                    <TestTube2 className="w-4 h-4 mr-2" />
+                    Patient Information
+                  </Badge>
+                  <h2 className="text-2xl font-semibold text-foreground mb-2">
+                    Create New Patient Record
+                  </h2>
+                  <p className="text-muted-foreground">
+                    Fill in the patient details and test information below
+                  </p>
+                </div>
+                <NewEntryForm onSubmit={handleSubmit} />
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Additional decorative elements */}
-        <div className="absolute top-1/2 left-8 w-2 h-2 bg-blue-400 rounded-full opacity-60 animate-bounce-gentle" style={{ animationDelay: '0s' }}></div>
-        <div className="absolute top-1/3 right-12 w-1 h-1 bg-purple-400 rounded-full opacity-40 animate-bounce-gentle" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-1/4 left-1/4 w-1.5 h-1.5 bg-green-400 rounded-full opacity-50 animate-bounce-gentle" style={{ animationDelay: '2s' }}></div>
+          {/* Additional decorative elements */}
+          <div className="absolute top-1/2 left-8 w-2 h-2 bg-blue-400 rounded-full opacity-60 animate-bounce-gentle" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute top-1/3 right-12 w-1 h-1 bg-purple-400 rounded-full opacity-40 animate-bounce-gentle" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-1/4 left-1/4 w-1.5 h-1.5 bg-green-400 rounded-full opacity-50 animate-bounce-gentle" style={{ animationDelay: '2s' }}></div>
         </div>
       </div>
     </div>
