@@ -15,10 +15,10 @@ async function generateTestReport({ patient, test, result, doctor }) {
 
   // Header Section
   doc.rect(0, 0, 612, 100).fill('#1e40af'); // Blue header
-  doc.font('Helvetica-Bold').fontSize(24).fill('white').text('MEDILAB', 50, 40);
+  doc.font('Helvetica-Bold').fontSize(24).fill('white').text('LabSys', 50, 40);
   doc.fontSize(10).text('Advanced Laboratory Services', 50, 65);
   doc.text('123 Health Street, Medical City', 400, 40, { align: 'right' });
-  doc.text('Contact: (555) 123-4567 | info@medilab.com', 400, 55, { align: 'right' });
+  doc.text('Contact: (555) 123-4567 | info@labsys.com', 400, 55, { align: 'right' });
 
   doc.moveDown(4);
 
@@ -49,7 +49,7 @@ async function generateTestReport({ patient, test, result, doctor }) {
   doc.font('Helvetica').fontSize(10).fill('#374151');
   doc.text(`Test Type:`, 320, startY + 40); doc.font('Helvetica-Bold').text(test.name, 390, startY + 40);
   doc.font('Helvetica').text(`Date:`, 320, startY + 55); doc.text(new Date().toLocaleDateString(), 390, startY + 55);
-  doc.font('Helvetica').text(`Ref. Doc:`, 320, startY + 70); doc.text(doctor ? doctor.name : 'Self', 390, startY + 70);
+  doc.font('Helvetica').text(`Added By:`, 320, startY + 70); doc.text(doctor ? doctor.username : 'System', 390, startY + 70);
 
   doc.moveDown(6);
 
@@ -98,7 +98,7 @@ async function generateTestReport({ patient, test, result, doctor }) {
   const pageHeight = 792;
   doc.fontSize(8).fill('#6b7280');
   doc.text('Disclaimer: This is an electronically generated report. No signature required.', 50, pageHeight - 50, { align: 'center' });
-  doc.text('Medilab Systems © 2025', 50, pageHeight - 35, { align: 'center' });
+  doc.text('LabSys © 2025', 50, pageHeight - 35, { align: 'center' });
 
   doc.end();
   return filePath;

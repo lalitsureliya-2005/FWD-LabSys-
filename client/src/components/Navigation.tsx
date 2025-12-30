@@ -41,7 +41,7 @@ export default function Navigation({ username, onLogout }: NavigationProps) {
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center shadow-md">
               <TestTube2 className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold text-foreground shimmer">Lab Test System</span>
+            <span className="text-lg font-semibold text-foreground">Lab Test System</span>
           </div>
 
           <div className="flex items-center gap-2">
